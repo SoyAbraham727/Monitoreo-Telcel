@@ -13,7 +13,7 @@ SLEEP_TIME = 300  # Tiempo de espera en segundos entre ejecuciones
 ALERT_TIMEOUT = 900  # Tiempo en segundos para activar la alarma (15 minutos)
 
 # Variables de configuración del sistema de logs
-LOG_SEVERITY = "external.critical"
+CRITICAL_SEVERITY = "external.critical"
 WARNING_SEVERITY = "external.warning"
 
 # Claves del archivo YAML
@@ -30,10 +30,10 @@ def cargar_yaml():
         with open(YAML_FILE, "r") as file:
             return yaml.safe_load(file)
     except yaml.YAMLError as e:
-        jcs.syslog(LOG_SEVERITY, f"Error al leer el YAML: {e}")
+        jcs.syslog(CRITICAL_SEVERITY, f"Error al leer el YAML: {e}")
         return None
     except Exception as e:
-        jcs.syslog(LOG_SEVERITY, f"Error inesperado al leer el YAML: {e}")
+        jcs.syslog(CRITICAL_SEVERITY, f"Error inesperado al leer el YAML: {e}")
         return None
 
 def guardar_yaml(data):
@@ -42,12 +42,12 @@ def guardar_yaml(data):
         with open(YAML_FILE, "w") as file:
             yaml.safe_dump(data, file)
     except Exception as e:
-        jcs.syslog(LOG_SEVERITY, f"Error al escribir el YAML: {e}")
+        jcs.syslog(CRITICAL_SEVERITY, f"Error al escribir el YAML: {e}")
 
 def enviar_alarma(hostname, ip):
     """Envía una alarma al correlacionador tras 3 eventos consecutivos de fallo."""
     mensaje = f"ALARMA: {hostname} con destino {ip} ha fallado durante 15 minutos seguidos"
-    jcs.syslog(LOG_SEVERITY, mensaje)
+    jcs.syslog(CRITICAL_SEVERITY, mensaje)
 
 def hacer_ping(dev, hostname, ip, data):
     """Ejecuta ping en un dispositivo Juniper y maneja eventos consecutivos fallidos."""
@@ -73,7 +73,7 @@ def hacer_ping(dev, hostname, ip, data):
             data[hostname][KEY_EVENTOS] = 0  # Reiniciar si la prueba es exitosa
 
     except Exception as e:
-        jcs.syslog(LOG_SEVERITY, f"Fallo en ping a {hostname} -> {ip} - Error: {str(e)}")
+        jcs.syslog(CRITICAL_SEVERITY, f"Fallo en ping a {hostname} -> {ip} - Error: {str(e)}")
 
 def main():
     dev = Device()
