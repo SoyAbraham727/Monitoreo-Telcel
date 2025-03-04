@@ -1,19 +1,18 @@
-import time
 import yaml
 import jcs
 from jnpr.junos import Device
-from junos import Junos_Context
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Constantes Globales de Configuración
 YAML_FILE = "destinos_telcel.yml"
 COUNT = 50  # Número de intentos de ping
 RTT_THRESHOLD = 100  # Umbral de RTT en milisegundos
 MAX_EVENTOS = 3  # Número de eventos consecutivos antes de enviar alarma
-SLEEP_TIME = 300  # Tiempo de espera en segundos entre ejecuciones
 ALERT_TIMEOUT = 900  # Tiempo en segundos para activar la alarma (15 minutos)
+MAX_WORKERS = 10  # Número máximo de trabajadores (threads) en el pool
 
 # Variables de configuración del sistema de logs
-CRITICAL_SEVERITY = "external.critical"
+LOG_SEVERITY = "external.critical"
 WARNING_SEVERITY = "external.warning"
 
 # Claves del archivo YAML
@@ -29,25 +28,25 @@ def cargar_yaml():
     try:
         with open(YAML_FILE, "r") as file:
             return yaml.safe_load(file)
-    except yaml.YAMLError as e:
-        jcs.syslog(CRITICAL_SEVERITY, f"Error al leer el YAML: {e}")
+    except (yaml.YAMLError, Exception) as e:
+        jcs.syslog(LOG_SEVERITY, f"Error al leer el YAML: {e}")
         return None
-    except Exception as e:
-        jcs.syslog(CRITICAL_SEVERITY, f"Error inesperado al leer el YAML: {e}")
-        return None
+
 
 def guardar_yaml(data):
     """Guarda la información actualizada en el archivo YAML."""
     try:
         with open(YAML_FILE, "w") as file:
-            yaml.safe_dump(data, file)
+            yaml.safe_dump(data, file, default_flow_style=False)
     except Exception as e:
-        jcs.syslog(CRITICAL_SEVERITY, f"Error al escribir el YAML: {e}")
+        jcs.syslog(LOG_SEVERITY, f"Error al escribir el YAML: {e}")
+
 
 def enviar_alarma(hostname, ip):
     """Envía una alarma al correlacionador tras 3 eventos consecutivos de fallo."""
     mensaje = f"ALARMA: {hostname} con destino {ip} ha fallado durante 15 minutos seguidos"
-    jcs.syslog(CRITICAL_SEVERITY, mensaje)
+    jcs.syslog(LOG_SEVERITY, mensaje)
+
 
 def hacer_ping(dev, hostname, ip, data):
     """Ejecuta ping en un dispositivo Juniper y maneja eventos consecutivos fallidos."""
@@ -73,27 +72,42 @@ def hacer_ping(dev, hostname, ip, data):
             data[hostname][KEY_EVENTOS] = 0  # Reiniciar si la prueba es exitosa
 
     except Exception as e:
-        jcs.syslog(CRITICAL_SEVERITY, f"Fallo en ping a {hostname} -> {ip} - Error: {str(e)}")
+        jcs.syslog(LOG_SEVERITY, f"Fallo en ping a {hostname} -> {ip} - Error: {str(e)}")
+
+
+def procesar_ip(dev, hostname, ip, data):
+    """Procesa el ping para una IP específica, de forma paralela."""
+    hacer_ping(dev, hostname, ip, data)
+
 
 def main():
     dev = Device()
     try:
         dev.open()
 
-        while True:
-            data = cargar_yaml()
-            if not data:
-                return
+        # Cargar el archivo YAML una sola vez
+        data = cargar_yaml()
+        if not data:
+            return
 
+        # Crear un ThreadPoolExecutor con el número máximo de workers
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+            # Enviar tareas para cada IP a los workers del executor
+            futures = []
             for hostname, info in data.items():
                 for ip in info.get(KEY_DESTINOS, []):
-                    hacer_ping(dev, hostname, ip, data)
+                    futures.append(executor.submit(procesar_ip, dev, hostname, ip, data))
 
-            guardar_yaml(data)  # Guardar cambios en YAML
-            time.sleep(SLEEP_TIME)  # Esperar antes de la siguiente ejecución
+            # Esperar que todos los hilos terminen su ejecución
+            for future in as_completed(futures):
+                pass  # Esperar a que todas las tareas se completen
+
+        # Guardar cambios en YAML una vez que todos los pings se han procesado
+        guardar_yaml(data)
 
     finally:
         dev.close()  # Asegura que la conexión se cierre cuando el ciclo termine o haya un error
+
 
 if __name__ == "__main__":
     main()
