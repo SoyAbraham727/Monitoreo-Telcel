@@ -22,13 +22,4 @@ A continuación, se detalla el flujo de actividades y su correspondiente procesa
    - Si se presentan paquetes perdidos o tiempos mayores a 100 ms, se debe enviar una alarma al correlacionador después de tres eventos de fallas consecutivas.
    - La alarma debe incluir la dirección del equipo origen y la IP destino.
 
-2. **Alarma y Reportes**: 
-   - El sistema debe generar un reporte detallado de las alarmas, incluyendo el nombre del equipo de origen, IP destino y el motivo del evento de conectividad fallido.
-   - El reporte debe poder ser consultado y exportado en formatos compatibles (por ejemplo, CSV o PDF).
-
-3. **Interfaz de Usuario**: 
-   - La interfaz debe mostrar de manera clara las IPs origen y destino, junto con el estado de las pruebas realizadas.
-   - Los usuarios deben poder visualizar los reportes de manera interactiva.
-   - La aplicación debe estar diseñada para ser intuitiva y fácil de usar, con acceso rápido a los detalles de cada evento de monitoreo.
-
 ---
