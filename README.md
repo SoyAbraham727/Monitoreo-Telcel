@@ -32,5 +32,3 @@ A continuación, se detalla el flujo de actividades y su correspondiente procesa
    - La aplicación debe estar diseñada para ser intuitiva y fácil de usar, con acceso rápido a los detalles de cada evento de monitoreo.
 
 ---
-
-Este formato es adecuado para tu README, y presenta de manera clara las direcciones IP y sus correspondientes criterios de aceptación. ¿Hay algo más que te gustaría agregar o ajustar en este formato?
