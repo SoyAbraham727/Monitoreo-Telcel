@@ -22,3 +22,31 @@ def cargar_yaml():
     
     return {}
 
+-------------
+
+import os
+
+# Ruta del archivo YAML
+YAML_FILE = "destinos_telcel.yml"
+
+def verificar_permisos(archivo):
+    """Verifica si el archivo tiene permisos de lectura y escritura."""
+    if not os.path.exists(archivo):
+        print(f"❌ El archivo '{archivo}' no existe.")
+        return
+
+    permisos = []
+    if os.access(archivo, os.R_OK):
+        permisos.append("Lectura ✅")
+    else:
+        permisos.append("Lectura ❌")
+
+    if os.access(archivo, os.W_OK):
+        permisos.append("Escritura ✅")
+    else:
+        permisos.append("Escritura ❌")
+
+    print(f"📄 Permisos del archivo '{archivo}': {', '.join(permisos)}")
+
+if __name__ == "__main__":
+    verificar_permisos(YAML_FILE)
